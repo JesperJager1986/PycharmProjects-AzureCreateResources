@@ -22,7 +22,8 @@ def main():
 
     service_principal_object_id = "19d8869f-a8e7-4c08-a775-b5529927a181" #from Enterprise application in Azure
     role_assigner = AzureRoleAssigner(config)
-    result = role_assigner.assign_contributor_role(
+    # Assign the Contributor role to the Service Principal
+    result = role_assigner.assign_contributor_to_storage(
         principal_id=service_principal_object_id
     )
 

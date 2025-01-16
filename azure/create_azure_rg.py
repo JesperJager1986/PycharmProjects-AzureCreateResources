@@ -166,7 +166,7 @@ class AzureRoleAssigner:
         else:
             raise Exception(f"Failed to get storage account resource ID: {response.status_code} {response.text}")
 
-    def assign_contributor_role(self, resource_id, principal_id):
+    def assign_contributor_role(self, resource_id: str, principal_id: str) -> None:
         """
         Assign the Contributor role to the given Service Principal for the specified resource.
         """
@@ -183,13 +183,29 @@ class AzureRoleAssigner:
                 "principalType": "ServicePrincipal"  # Explicitly specify the principal type
             }
         }
-        response = requests.put(url, headers=headers, json=body)
 
-        if response.status_code == 201:
-            print("Role assignment successful!")
-            return response.json()
-        else:
-            raise Exception(f"Failed to assign role: {response.status_code} {response.text}")
+        try:
+            # Make the PUT request to assign the role
+            response = requests.put(url, headers=headers, json=body)
+
+            # Check for successful response
+            if response.status_code == 201:
+                print("Role assignment successful!")
+                #return response.json()
+
+            # Handle 409 Conflict specifically
+            elif response.status_code == 409:
+                print("Role assignment already exists. Ignoring the conflict.")
+                #return {"status": "conflict", "message": "Role assignment already exists."}
+
+            # Raise an error for other status codes
+            else:
+                response.raise_for_status()
+
+        except requests.exceptions.RequestException as e:
+            # Catch and log unexpected errors
+            print(f"Failed to assign role due to an error: {e}")
+            raise
 
     def assign_contributor_to_storage(self, principal_id):
         """
