@@ -1,2 +1,5 @@
 .idea
 poetry.lock
+
+dummyFolder
+__pycache__
