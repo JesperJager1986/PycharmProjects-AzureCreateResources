@@ -9,7 +9,7 @@ def main():
         subscription_id="c33d8af8-0575-48a3-8044-61ece2e09fcb",
         resource_group="testRGJJ",
         storage_account_name="testsajj",
-        location = "eastus"
+        location = "westeurope"
     )
     container_name = "example-container"
     resource_service = ResourceGroupService(config)
