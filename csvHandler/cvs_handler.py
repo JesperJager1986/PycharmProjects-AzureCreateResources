@@ -4,17 +4,16 @@ from datetime import datetime
 
 
 class CsvFileGenerator:
-    def __init__(self, storage_directory="csv_files"):
-        self.storage_directory = storage_directory
+    def __init__(self):
+        self.storage_directory = "/Users/jesperthoftillemannjaeger/PycharmProjects/PycharmProjects-AzureCreateResources/dummyFolder"
 
         # Ensure the storage directory exists
         if not os.path.exists(self.storage_directory):
             os.makedirs(self.storage_directory)
 
-    def generate_csv(self, header=None):
+    def generate_csv(self, header=None, file_name = None):
         """Generates a CSV file with a timestamp-based filename."""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_name = f"data_{timestamp}.csv"
+
         file_path = os.path.join(self.storage_directory, file_name)
 
         data = [

@@ -1,9 +1,14 @@
+from datetime import datetime
+
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.storage import StorageManagementClient
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import HttpResponseError
 from threading import Timer
+
+from csvHandler.cvs_handler import CsvFileGenerator
+
 
 class AzureConfig:
     def __init__(self, subscription_id, resource_group, storage_account_name, location: str):
@@ -103,16 +108,24 @@ class BlobContainerUploaderService:
 
 
 class CsvFileUploader:
-    def __init__(self, blob_service: BlobContainerUploaderService, container_name, file_path, blob_name, interval_minutes):
+    def __init__(self, blob_service: BlobContainerUploaderService,
+                 container_name,
+                 interval_minutes):
         self.blob_service = blob_service
         self.container_name = container_name
-        self.file_path = file_path
-        self.blob_name = blob_name
         self.interval_minutes = interval_minutes
+        self.cvs_file_generator = CsvFileGenerator()
 
     def upload_file_periodically(self):
         """Uploads the file to the storage container every x minutes."""
-        self.blob_service.upload_file(self.container_name, self.file_path, self.blob_name)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_name = f"data_{timestamp}.csv"
+        print(file_name)
+        path = self.cvs_file_generator.generate_csv(file_name=file_name)
+        self.blob_service.upload_file(self.container_name, path, file_name)
 
         # Set the Timer to upload the file again after the specified interval
         Timer(self.interval_minutes * 60, self.upload_file_periodically).start()
+
+
+

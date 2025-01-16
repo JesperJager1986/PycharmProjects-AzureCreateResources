@@ -21,16 +21,13 @@ def main():
     blob_service = BlobContainerService(config)
     blob_service.create_container(container_name=container_name)
 
-    file_path = "/Users/jesperthoftillemannjaeger/PycharmProjects/PycharmProjects-AzureCreateResources/dummyFolder"  # Path to the CSV file to upload
-    blob_name = "uploaded-csv-file.csv"  # The name you want to give to the blob in storage
+
     interval_minutes = 1  # Set the interval in minutes
 
     # Azure configuration
     blob_service2 = BlobContainerUploaderService(config)
-    cvs_file_generator = CsvFileGenerator(file_path)
-    path = cvs_file_generator.generate_csv()
-    # Create and start the CSV file uploader
-    uploader = CsvFileUploader(blob_service2, container_name, path, container_name, interval_minutes)
+
+    uploader = CsvFileUploader(blob_service2, container_name, interval_minutes)
     uploader.upload_file_periodically()  # Start the periodic upload
 
 if __name__ == "__main__":
