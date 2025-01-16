@@ -1,6 +1,7 @@
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.storage import StorageManagementClient
 from azure.storage.blob import BlobServiceClient
+from azure.mgmt.resource import ResourceManagementClient
 
 # Configuration class (SRP)
 class AzureConfig:
@@ -9,6 +10,28 @@ class AzureConfig:
         self.resource_group = resource_group
         self.storage_account_name = storage_account_name
         self.credential = DefaultAzureCredential()
+
+
+class ResourceGroupService:
+    def __init__(self, config: AzureConfig):
+        self.config = config
+        self.client = ResourceManagementClient(config.credential, config.subscription_id)
+
+    def ensure_resource_group(self, location):
+        try:
+            self.client.resource_groups.get(self.config.resource_group)
+            print(f"Resource group '{self.config.resource_group}' already exists.")
+        except Exception as e:
+            if "ResourceGroupNotFound" in str(e):
+                print(f"Resource group '{self.config.resource_group}' does not exist. Creating it...")
+                self.client.resource_groups.create_or_update(
+                    self.config.resource_group,
+                    {"location": location}
+                )
+                print(f"Resource group '{self.config.resource_group}' created successfully.")
+            else:
+                print(f"An error occurred: {e}")
+
 
 # Service class for managing storage accounts (SRP)
 class StorageAccountService:
@@ -48,10 +71,13 @@ class BlobContainerService:
 # Main function applying DIP
 def main():
     config = AzureConfig(
-        subscription_id="your_subscription_id",
-        resource_group="your_resource_group",
-        storage_account_name="your_storage_account_name",
+        subscription_id="c33d8af8-0575-48a3-8044-61ece2e09fcb",
+        resource_group="testRGJJ",
+        storage_account_name="testsajj",
     )
+
+    resource_service = ResourceGroupService(config)
+    resource_service.ensure_resource_group(location="eastus")
 
     # Storage Account creation
     storage_service = StorageAccountService(config)
