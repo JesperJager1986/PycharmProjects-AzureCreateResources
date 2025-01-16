@@ -1,11 +1,11 @@
 from datetime import datetime
-
-from azure.identity import DefaultAzureCredential
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.storage import StorageManagementClient
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import HttpResponseError
 from threading import Timer
+import requests
+
 
 from csvHandler.cvs_handler import CsvFileGenerator
 
@@ -126,6 +126,81 @@ class CsvFileUploader:
 
         # Set the Timer to upload the file again after the specified interval
         Timer(self.interval_minutes * 60, self.upload_file_periodically).start()
+
+
+import uuid
+from azure.identity import DefaultAzureCredential
+
+
+class AzureRoleAssigner:
+    def __init__(self, config):
+        """
+        Initialize the AzureRoleAssigner with an AzureConfig instance.
+        """
+        self.subscription_id = config.subscription_id
+        self.resource_group = config.resource_group
+        self.storage_account_name = config.storage_account_name
+        self.location = config.location
+        self.credentials = config.credential
+        self.contributor_role_id = "ba92f5b4-2d11-453d-a403-e96b0029c9fe"  # Contributor RoleDefinition ID
+
+    def get_access_token(self):
+        """
+        Get an access token for Azure Resource Management.
+        """
+        return self.credentials.get_token("https://management.azure.com/.default").token
+
+    def get_storage_account_resource_id(self):
+        """
+        Retrieve the resource ID of the storage account using Azure REST API.
+        """
+        url = f"https://management.azure.com/subscriptions/{self.subscription_id}/resourceGroups/{self.resource_group}/providers/Microsoft.Storage/storageAccounts/{self.storage_account_name}?api-version=2022-09-01"
+        headers = {
+            "Authorization": f"Bearer {self.get_access_token()}",
+            "Content-Type": "application/json"
+        }
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            return response.json()["id"]
+        else:
+            raise Exception(f"Failed to get storage account resource ID: {response.status_code} {response.text}")
+
+    def assign_contributor_role(self, resource_id, principal_id):
+        """
+        Assign the Contributor role to the given Service Principal for the specified resource.
+        """
+        role_assignment_id = str(uuid.uuid4())  # Unique ID for the role assignment
+        url = f"https://management.azure.com{resource_id}/providers/Microsoft.Authorization/roleAssignments/{role_assignment_id}?api-version=2020-04-01-preview"
+        headers = {
+            "Authorization": f"Bearer {self.get_access_token()}",
+            "Content-Type": "application/json"
+        }
+        body = {
+            "properties": {
+                "roleDefinitionId": f"/subscriptions/{self.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/{self.contributor_role_id}",
+                "principalId": principal_id,  # Ensure this is the Service Principal ID
+                "principalType": "ServicePrincipal"  # Explicitly specify the principal type
+            }
+        }
+        response = requests.put(url, headers=headers, json=body)
+
+        if response.status_code == 201:
+            print("Role assignment successful!")
+            return response.json()
+        else:
+            raise Exception(f"Failed to assign role: {response.status_code} {response.text}")
+
+    def assign_contributor_to_storage(self, principal_id):
+        """
+        High-level method to assign Contributor role for storage account.
+        """
+        print(f"Fetching resource ID for storage account '{self.storage_account_name}'...")
+        storage_account_id = self.get_storage_account_resource_id()
+        print(f"Assigning Contributor role to principal '{principal_id}'...")
+        return self.assign_contributor_role(storage_account_id, principal_id)
+
+
 
 
 

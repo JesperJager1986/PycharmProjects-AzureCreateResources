@@ -1,14 +1,12 @@
 from azure.create_azure_rg import AzureConfig, ResourceGroupService, StorageAccountService, BlobContainerService, \
-    CsvFileUploader, BlobContainerUploaderService
+    CsvFileUploader, BlobContainerUploaderService, AzureRoleAssigner
 
-from csvHandler.cvs_handler import CsvFileGenerator
 
-# Main function applying DIP
 def main():
     config = AzureConfig(
         subscription_id="c33d8af8-0575-48a3-8044-61ece2e09fcb",
-        resource_group="testRGJJ",
-        storage_account_name="testsajj",
+        resource_group="rg_for_databricks",
+        storage_account_name="datafordatabricks",
         location = "westeurope"
     )
     container_name = "example-container"
@@ -19,7 +17,17 @@ def main():
     storage_service.create_storage_account()
 
     blob_service = BlobContainerService(config)
+
     blob_service.create_container(container_name=container_name)
+
+    service_principal_object_id = "19d8869f-a8e7-4c08-a775-b5529927a181" #from Enterprise application in Azure
+    role_assigner = AzureRoleAssigner(config)
+    result = role_assigner.assign_contributor_role(
+        principal_id=service_principal_object_id
+    )
+
+    # Output the result
+    print(f"Role Assignment Result: {result}")
 
 
     interval_minutes = 1  # Set the interval in minutes
